@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.7">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!doctype html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="utf-8" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width,initial-scale=1" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;GPX → Places (Google + Map + Progress + Clusters)&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"&gt;&lt;/script&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- MarkerCluster --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"&gt;&lt;/script&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body{font-family:system-ui;max-width:1000px;margin:24px auto;padding:0 16px;color:#111}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>h1{font-size:22px;margin-bottom:8px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>textarea{width:100%;height:140px;font-family:monospace;margin-top:8px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.log{background:#f7f7f8;padding:12px;border-radius:8px;border:1px solid #eee;white-space:pre-wrap;max-height:240px;overflow:auto}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>#map{height:400px;margin-top:20px;border-radius:8px;border:1px solid #ccc}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>#progress-container{width:100%;background:#eee;border-radius:8px;overflow:hidden;margin:12px 0;height:16px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>#progress{height:100%;width:0%;background:#4caf50;transition:width .25s}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;GPX → Cities / Towns / Villages (Google Geocoding + Map + Progress)&lt;/h1&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="controls"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;input id="gpxfile" type="file" accept=".gpx,.xml" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;input id="apikey" type="text" placeholder="Google Maps API key" style="min-width:220px" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;input id="delay" type="number" value="300" min="0" style="width:110px" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;label for="delay"&gt;ms delay&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button id="start"&gt;Process GPX&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button id="download" disabled&gt;Download CSV&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="progress-container"&gt;&lt;div id="progress"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;label&gt;&lt;strong&gt;Raw GPX (first 1000 chars)&lt;/strong&gt;&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;textarea id="gpxpreview" readonly&gt;&lt;/textarea&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h3&gt;Map Preview&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="map"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h3&gt;Log&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="log" class="log"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1">const $ = id =&gt; document.getElementById(id);</p>
+<p class="p1">const logEl = $('log');</p>
+<p class="p1">function log(...a){ logEl.textContent += a.join(' ') + '</p>
+<p class="p1">'; logEl.scrollTop = logEl.scrollHeight; }</p>
+<p class="p2"><br></p>
+<p class="p1">// GPX parsing</p>
+<p class="p1">function parseGPX(text){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const xml=new DOMParser().parseFromString(text,'application/xml');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const pts=['trkpt','rtept','wpt'].flatMap(t=&gt;Array.from(xml.querySelectorAll(t)));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return pts.map(el=&gt;({lat:+el.getAttribute('lat'), lon:+el.getAttribute('lon')}));</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// RDP simplify</p>
+<p class="p1">function getDist(pt,a,b){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const dx=b.x-a.x, dy=b.y-a.y;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!dx&amp;&amp;!dy) return Math.hypot(pt.x-a.x, pt.y-a.y);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const t=((pt.x-a.x)*dx+(pt.y-a.y)*dy)/(dx*dx+dy*dy);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const px=a.x+t*dx, py=a.y+t*dy;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return Math.hypot(pt.x-px, pt.y-py);</p>
+<p class="p1">}</p>
+<p class="p1">function rdp(p,eps){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(p.length&lt;3) return p;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const f=p[0], l=p[p.length-1];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let idx=-1, max=0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=1;i&lt;p.length-1;i++){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d=getDist({x:p[i].lon,y:p[i].lat},{x:f.lon,y:f.lat},{x:l.lon,y:l.lat});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(d&gt;max){max=d;idx=i;}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(max&gt;eps){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const left=rdp(p.slice(0,idx+1),eps);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const right=rdp(p.slice(idx),eps);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return left.slice(0,-1).concat(right);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return [f,l];</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// Google reverse geocode</p>
+<p class="p1">async function reverseGoogle(lat,lon,key){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const url=`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&amp;key=${key}`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return fetch(url).then(r=&gt;r.json());</p>
+<p class="p1">}</p>
+<p class="p1">function extractGooglePlace(j){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!j.results?.length) return null;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const c=j.results[0].address_components;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const get=t=&gt;{const x=c.find(v=&gt;v.types.includes(t));return x?x.long_name:null;};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return get('locality') || get('postal_town') || get('administrative_area_level_2') || get('administrative_area_level_1');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// Map init</p>
+<p class="p1">let map, polyline, cluster;</p>
+<p class="p1">function initMap(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(map) return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>map=L.map('map').setView([0,0],2);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>cluster=L.markerClusterGroup();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>map.addLayer(cluster);</p>
+<p class="p1">}</p>
+<p class="p1">function drawTrackAnimated(points){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(polyline){polyline.remove();}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const latlngs=points.map(p=&gt;[p.lat,p.lon]);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>polyline=L.polyline([], {color:'blue'}).addTo(map);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>map.fitBounds(L.latLngBounds(latlngs));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let i=0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function step(){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(i&lt;latlngs.length){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>polyline.addLatLng(latlngs[i]);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>i++;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>requestAnimationFrame(step);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>step();</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function drawTrack(points){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(polyline){polyline.remove();}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>polyline=L.polyline(points.map(p=&gt;[p.lat,p.lon]),{color:'blue'}).addTo(map);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>map.fitBounds(polyline.getBounds());</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function updateProgress(i,total){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const pct=Math.round((i/total)*100);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('progress').style.width=pct+'%';</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">$('start').onclick=async ()=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">  </span>logEl.textContent='';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('progress').style.width='0%';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>initMap();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>cluster.clearLayers();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const file=$('gpxfile').files[0];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!file){log('No file selected');return;}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const key=$('apikey').value.trim();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!key){log('Google API key required');return;}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const delay=+$('delay').value || 0;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const text=await file.text();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('gpxpreview').value=text.slice(0,1000);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>log('GPX loaded');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const pts=parseGPX(text);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!pts.length){log('No points');return;}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>log('Points:',pts.length);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>drawTrackAnimated(pts);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const simp=rdp(pts,0.0008);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>log('Simplified:',simp.length);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const places=new Map();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;simp.length;i++){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const {lat,lon}=simp[i];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>log(`Geocoding ${i+1}/${simp.length}`);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const j=await reverseGoogle(lat,lon,key);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const p=extractGooglePlace(j);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(p &amp;&amp; !places.has(p)){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>places.set(p,{place:p,lat,lon});</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const m=L.marker([lat,lon]).bindPopup(p);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>cluster.addLayer(m);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}catch(e){log('Error',e.message);} <span class="Apple-converted-space">   </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>updateProgress(i+1,simp.length);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>await new Promise(r=&gt;setTimeout(r,delay));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const rows=[["place","lat","lon"],...places.values()].map(r=&gt;Array.isArray(r)?r:[r.place,r.lat,r.lon]);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const csv=rows.map(r=&gt;r.map(c=&gt;'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('</p>
+<p class="p1">');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const blob=new Blob([csv],{type:'text/csv'});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const url=URL.createObjectURL(blob);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const dl=$('download');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>dl.disabled=false;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>dl.onclick=()=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const a=document.createElement('a');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>a.href=url;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>a.download=file.name.replace(/\.gpx$/i,'')+'_places.csv';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>a.click();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>log('Done. Found '+places.size+' places.');</p>
+<p class="p1">};</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
